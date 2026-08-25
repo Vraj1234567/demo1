@@ -25,7 +25,7 @@ conn.commit()
 
 # Admin credentials
 ADMIN_EMAIL = 'admin@admin.com'
-ADMIN_PASS = 'admin123'
+ADMIN_PASS = 'admin123@admin.com'
 
 # Sidebar menu
 menu = st.sidebar.selectbox("Navigate", ["Home", "Register", "Login"])
