@@ -388,6 +388,7 @@ if menu == "Login":
                 if login_email == ADMIN_EMAIL and login_password == ADMIN_PASS:
                     st.session_state['logged_in'] = True
                     st.session_state['user_role'] = 'admin'
+                    st.session_state['just_logged_in'] = True
                     st.balloons()
                     st.rerun()
 
@@ -402,6 +403,7 @@ if menu == "Login":
                         st.session_state['logged_in'] = True
                         st.session_state['user_role'] = 'user'
                         st.session_state['user_name'] = user[1]
+                        st.session_state['just_logged_in'] = True
                         st.balloons()
                         st.rerun()
                     else:
@@ -409,13 +411,14 @@ if menu == "Login":
 
     else:
         if st.sidebar.button("Log out"):
-            for key in ('logged_in', 'user_role', 'user_name'):
+            for key in ('logged_in', 'user_role', 'user_name', 'just_logged_in'):
                 st.session_state.pop(key, None)
             st.rerun()
 
         # ---- Admin panel ----
         if st.session_state['user_role'] == 'admin':
-            st.success("Logged in as Admin!")
+            if st.session_state.pop('just_logged_in', False):
+                st.success("Logged in as Admin!")
             st.title("Admin Panel - User Management")
 
             c.execute("SELECT id, name, city, email, mobile FROM users")
@@ -442,7 +445,8 @@ if menu == "Login":
 
         # ---- User dashboard ----
         else:
-            st.success("Logged in as User!")
+            if st.session_state.pop('just_logged_in', False):
+                st.success("Logged in as User!")
             st.title("User Dashboard")
 
             # Download model if not exists
