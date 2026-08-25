@@ -605,8 +605,3 @@ if menu == "Login":
                             use_container_width=True,
                             config={"displayModeBar": False},
                         )
-
-                    if predicted_class == "real":
-                        st.success(classes[prd])
-                    else:
-                        st.warning(classes[prd])
