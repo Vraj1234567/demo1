@@ -267,9 +267,13 @@ if menu == 'Home':
     img_b64 = get_base64("image2.jpg")
 
     if img_b64:
-        # Fixed corner floating image
+        # Centered floating image
         st.markdown(
-            f'<img src="data:image/png;base64,{img_b64}" class="floating-inline" width="200">',
+            f'''
+            <div style="display: flex; justify-content: center;">
+                <img src="data:image/png;base64,{img_b64}" class="floating-inline" width="200">
+            </div>
+            ''',
             unsafe_allow_html=True
         )
         col1, col2, col3, col4 = st.columns(4)
