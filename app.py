@@ -385,7 +385,7 @@ if menu == "Login":
                     st.session_state['logged_in'] = True
                     st.session_state['user_role'] = 'admin'
                     st.balloons()
-                    st.experimental_rerun()
+                    st.rerun()
 
                 else:
                     c.execute(
@@ -399,7 +399,7 @@ if menu == "Login":
                         st.session_state['user_role'] = 'user'
                         st.session_state['user_name'] = user[1]
                         st.balloons()
-                        st.experimental_rerun()
+                        st.rerun()
                     else:
                         st.error("Invalid credentials.")
 
@@ -407,13 +407,34 @@ if menu == "Login":
         if st.sidebar.button("Log out"):
             for key in ('logged_in', 'user_role', 'user_name'):
                 st.session_state.pop(key, None)
-            st.experimental_rerun()
+            st.rerun()
 
         # ---- Admin panel ----
         if st.session_state['user_role'] == 'admin':
             st.success("Logged in as Admin!")
             st.title("Admin Panel - User Management")
-            # ... rest unchanged
+
+            c.execute("SELECT id, name, city, email, mobile FROM users")
+            users = c.fetchall()
+
+            for user in users:
+                user_id, name, city, email, mobile = user
+                st.markdown(
+                    f'''
+                    <div class="feature-card" style="text-align:left; margin-bottom:10px;">
+                        <b>{name}</b> | {email} | {city} | {mobile}
+                    </div>
+                    ''',
+                    unsafe_allow_html=True
+                )
+
+                if st.button(f"Delete {email}", key=user_id):
+                    with st.spinner(f'Removing {email}...'):
+                        time.sleep(0.3)
+                        c.execute("DELETE FROM users WHERE id=?", (user_id,))
+                        conn.commit()
+                    st.success(f"User {email} deleted.")
+                    st.rerun()
 
         # ---- User dashboard ----
         else:
