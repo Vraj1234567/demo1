@@ -7,6 +7,7 @@ from PIL import Image
 import os
 import base64
 import time
+import plotly.graph_objects as go
 
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(
@@ -256,6 +257,62 @@ def get_base64(path):
     with open(path, "rb") as f:
         return base64.b64encode(f.read()).decode()
 
+
+def make_gauge(confidence, predicted_class):
+    """Speedometer-style gauge showing model confidence."""
+    bar_color = "#00e68c" if predicted_class == "real" else "#ff4d6d"
+    fig = go.Figure(go.Indicator(
+        mode="gauge+number",
+        value=confidence,
+        number={"suffix": "%", "font": {"color": "#e1e2e4", "size": 34}},
+        gauge={
+            "axis": {"range": [0, 100], "tickcolor": "#858ea1", "tickfont": {"color": "#858ea1"}},
+            "bar": {"color": bar_color, "thickness": 0.3},
+            "bgcolor": "rgba(0,0,0,0)",
+            "borderwidth": 0,
+            "steps": [
+                {"range": [0, 50], "color": "rgba(133,142,161,0.15)"},
+                {"range": [50, 100], "color": "rgba(133,142,161,0.25)"},
+            ],
+        },
+    ))
+    fig.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        margin=dict(l=20, r=20, t=30, b=10),
+        height=250,
+        font={"color": "#e1e2e4"},
+    )
+    return fig
+
+
+def make_probability_bar(preds):
+    """Horizontal bar chart comparing Real vs Fake probability."""
+    classes = ["Real", "Fake"]
+    values = [float(preds[0][0]) * 100, float(preds[0][1]) * 100]
+    colors = ["#00e68c", "#ff4d6d"]
+
+    fig = go.Figure(go.Bar(
+        x=values,
+        y=classes,
+        orientation="h",
+        marker=dict(color=colors, line=dict(width=0)),
+        text=[f"{v:.1f}%" for v in values],
+        textposition="outside",
+        textfont=dict(color="#e1e2e4"),
+    ))
+    fig.update_layout(
+        xaxis=dict(range=[0, 100], showgrid=False, color="#858ea1", ticksuffix="%"),
+        yaxis=dict(showgrid=False, color="#e1e2e4"),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        margin=dict(l=10, r=10, t=10, b=10),
+        height=180,
+        font={"color": "#e1e2e4"},
+    )
+    return fig
+
+
 if menu == 'Home':
 
     st.title('DeepFake Face Classification')
@@ -478,8 +535,11 @@ if menu == "Login":
                 # Open image with PIL
                 image = Image.open(uploaded_file).convert("RGB")
 
-                # Display image
-                st.image(image, caption="Uploaded Image", use_container_width=True)
+                # Display image and results side-by-side once we have a prediction
+                img_col, result_col = st.columns([1, 1.2])
+
+                with img_col:
+                    st.image(image, caption="Uploaded Image", use_container_width=True)
 
                 # Read image for OpenCV
                 file_bytes = np.frombuffer(uploaded_file.getvalue(), dtype=np.uint8)
@@ -515,20 +575,36 @@ if menu == "Login":
                     badge_class = "result-real" if predicted_class == "real" else "result-fake"
                     icon = "✅" if predicted_class == "real" else "⚠️"
 
-                    st.markdown(
-                        f'''
-                        <div class="result-badge {badge_class}">
-                            {icon} {predicted_class}
-                        </div>
-                        <div class="conf-track">
-                            <div class="conf-fill" style="--target-width: {confidence:.1f}%;"></div>
-                        </div>
-                        <p style="color:#858ea1; margin-top:6px;">
-                            Confidence: {confidence:.1f}%
-                        </p>
-                        ''',
-                        unsafe_allow_html=True
-                    )
+                    with result_col:
+                        st.markdown(
+                            f'''
+                            <div class="result-badge {badge_class}">
+                                {icon} {predicted_class}
+                            </div>
+                            <div class="conf-track">
+                                <div class="conf-fill" style="--target-width: {confidence:.1f}%;"></div>
+                            </div>
+                            <p style="color:#858ea1; margin-top:6px;">
+                                Confidence: {confidence:.1f}%
+                            </p>
+                            ''',
+                            unsafe_allow_html=True
+                        )
+
+                        # Gauge chart for confidence
+                        st.plotly_chart(
+                            make_gauge(confidence, predicted_class),
+                            use_container_width=True,
+                            config={"displayModeBar": False},
+                        )
+
+                        # Bar chart comparing both class probabilities
+                        st.markdown("<p style='color:#858ea1; margin-bottom:0;'>Class probabilities</p>", unsafe_allow_html=True)
+                        st.plotly_chart(
+                            make_probability_bar(preds),
+                            use_container_width=True,
+                            config={"displayModeBar": False},
+                        )
 
                     if predicted_class == "real":
                         st.success(classes[prd])
